@@ -1,7 +1,9 @@
 const express = require('express')
 const bodyParser = require('body-parser')
+const terminalLink = require('terminal-link')
 const MongoClient = require('mongodb').MongoClient
 
+const link = terminalLink('localhost', 'localhost:3000');
 const app = express()
 const connectionString = 'mongodb+srv://admin:admin@cluster0.lc4pb.gcp.mongodb.net/Cluster0?retryWrites=true&w=majority'
 MongoClient.connect(connectionString, { useUnifiedTopology: true })
@@ -12,8 +14,10 @@ MongoClient.connect(connectionString, { useUnifiedTopology: true })
 
 		app.set('view engine', 'ejs')
 		app.use(bodyParser.urlencoded({ extended: true }))
+		app.use(express.static('public'))
+		app.use(bodyParser.json())
 		app.listen(3000, () => {
-			console.log('listening on 3000')
+			console.log(`Listening on ${link}`)
 		})
 		// CRUD handlers
 		app.get('/', (req, res) => {
@@ -24,14 +28,30 @@ MongoClient.connect(connectionString, { useUnifiedTopology: true })
 				.catch(error => console.error(error))
 			
 		})
-
 		app.post('/quotes', (req, res) => {
 			quotesCollection.insertOne(req.body)
 				.then(result => {
 					res.redirect('/')
-					console.log(result)
 				})
 				.catch(error => console.error(error))
+		})
+		app.put('/quotes', (req, res) => {
+			quotesCollection.findOneAndUpdate(
+				{name: 'junior'},
+				{
+					$set: {
+						name: req.body.name,
+						quote: req.body.quote
+					}
+				},
+				{
+					upsert: true
+				}
+			)
+			.then( result => {
+				console.log(result)
+			})
+			.catch(error => console.error(error))
 		})
 	})
 	.catch(error => console.error(error))
